@@ -147,8 +147,7 @@ func (o *Options) Run() error {
 			if !o.DryRun {
 				err = o.Destroy(name)
 				if err != nil {
-					log.Logger().Warnf("failed to destroy preview environment %s: %s; skipping", name, err)
-					continue
+					return fmt.Errorf("failed to destroy preview environment %s: %v", name, err)
 				}
 			} else {
 				log.Logger().Info(name)
