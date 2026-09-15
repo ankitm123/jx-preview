@@ -152,3 +152,67 @@ func TestPreviewGC(t *testing.T) {
 		t.Logf("fake comamnds: %s\n", c.CLI())
 	}
 }
+
+// TestPreviewGCContinuesAfterPerPreviewError asserts that a Preview which cannot be
+// queried (its PullRequest is gone from the git provider) is skipped rather than
+// aborting the whole GC run, so previews later in the list are still collected.
+func TestPreviewGCContinuesAfterPerPreviewError(t *testing.T) {
+	ns := "jx"
+
+	scmClient, fakeScmData := fakescm.NewDefault()
+
+	// a Preview whose PullRequest no longer exists on the git provider: well formed,
+	// but PullRequests.Find() will fail for it
+	brokenPreview, _ := fakepreviews.CreateTestPreviewAndPullRequest(fakeScmData, ns, "myower", "gonerepo", 11)
+	delete(fakeScmData.PullRequests, 11)
+
+	// a healthy Preview whose PullRequest is closed, so it should be garbage collected
+	healthyPreview, healthyPR := fakepreviews.CreateTestPreviewAndPullRequest(fakeScmData, ns, "myower", "liverepo", 12)
+	healthyPR.Closed = true
+
+	fakeScmData.CurrentUser.Login = "myuser"
+
+	previewClient := fake.NewSimpleClientset(brokenPreview, healthyPreview)
+	kubeClient := fakekube.NewSimpleClientset()
+
+	devEnv := jxenv.CreateDefaultDevEnvironment(ns)
+	devEnv.Namespace = ns
+	devEnv.Spec.Source.URL = "https://github.com/myorg/my-gitops-repo.git"
+	jxClient := jxfake.NewSimpleClientset(devEnv)
+
+	runner := &fakerunner.FakeRunner{
+		CommandRunner: func(c *cmdrunner.Command) (string, error) {
+			if c.Name == "git" && c.Args[0] == "clone" {
+				err := os.MkdirAll(filepath.Join(c.Args[2], "helmfiles", "jx"), 0755)
+				if err != nil {
+					return "", err
+				}
+				err = os.WriteFile(filepath.Join(c.Args[2], "helmfiles", "jx", "jx-values.yaml"), []byte(""), 0600)
+				if err != nil {
+					return "", err
+				}
+			}
+			return "", nil
+		},
+	}
+
+	_, o := gc.NewCmdGCPreviews()
+	o.GitUser = "fakeuser"
+	o.GitToken = "faketoken"
+	o.PreviewClient = previewClient
+	o.KubeClient = kubeClient
+	o.JXClient = jxClient
+	o.Namespace = ns
+	o.ScmClient = scmClient
+	o.CommandRunner = runner.Run
+
+	err := o.Run()
+	require.NoError(t, err, "a preview that cannot be queried should not fail the GC run")
+	assert.Equal(t, []string{healthyPreview.Name}, o.Deleted, "the healthy preview should still be collected")
+
+	ctx := context.Background()
+	previewList, err := previewClient.PreviewV1alpha1().Previews(ns).List(ctx, metav1.ListOptions{})
+	require.NoError(t, err, "failed to list the remaining previews in ns %s", ns)
+	require.Len(t, previewList.Items, 1, "only the skipped preview should remain")
+	assert.Equal(t, brokenPreview.Name, previewList.Items[0].Name, "the skipped preview should be left in place")
+}
