@@ -32,7 +32,7 @@ type Options struct {
 
 var (
 	cmdLong = templates.LongDesc(`
-		Garbage collect Jenkins X preview environments.
+		Garbage collect JayeX preview environments.
 
 		If a pull request is merged or closed the associated preview
 		environment will be deleted.

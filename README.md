@@ -6,13 +6,13 @@
 [![Apache](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/jenkins-x-plugins/jx-preview/blob/master/LICENSE)
 [![Slack Status](https://img.shields.io/badge/slack-join_chat-white.svg?logo=slack&style=social)](https://slack.k8s.io/)
 
-`jx-preview` is a small command line tool for creating Preview Environments in [Jenkins X](https://jenkins-x.io/)
+`jx-preview` is a small command line tool for creating Preview Environments in [JayeX](https://jayex.io/)
 
 ## Overview
 
 The [jx preview create](https://github.com/jenkins-x-plugins/jx-preview/blob/master/docs/cmd/jx-preview_create.md) command will create a new Preview environment, by default in its own unique namespace called `jx-$owner-$repo-pr-$number` using a [helmfile](https://github.com/roboll/helmfile) located by default in the `preview/helmfile.yaml` directory.
 
-New projects created with [Jenkins X 3.x](https://jenkins-x.io/docs/v3/) already have the `preview/helmfile.yaml` included. If your repository does not include this file it will be added into git in the Pull Request as an extra commit.
+New projects created with [JayeX 3.x](https://jayex.io/docs/v3/) already have the `preview/helmfile.yaml` included. If your repository does not include this file it will be added into git in the Pull Request as an extra commit.
     
 ## System tests in previews
 
@@ -46,9 +46,9 @@ For reference see the [Preview.Spec](https://github.com/jenkins-x-plugins/jx-pre
 
 ## Installation
 
-If you are using [Jenkins X 3.x](https://jenkins-x.io/docs/v3/) then its already included by default so there's nothing to install.
+If you are using [JayeX 3.x](https://jayex.io/docs/v3/) then its already included by default so there's nothing to install.
 
-If you are not using [Jenkins X 3.x](https://jenkins-x.io/docs/v3/) then you need to install the `jx3/jx-preview` chart to:
+If you are not using [JayeX 3.x](https://jayex.io/docs/v3/) then you need to install the `jx3/jx-preview` chart to:
 
 * install the [Preview](https://github.com/jenkins-x-plugins/jx-preview/blob/master/docs/crds/github-com-jenkins-x-jx-preview-pkg-apis-preview-v1alpha1.md#Preview) custom resource used to track the Preview environments
 * setups a `CronJob`  to garbage collect `Preview` environments when the Pull Requests have been closed or merged 
